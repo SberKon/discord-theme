@@ -29,6 +29,12 @@
         "TEXT_PLACEHOLDER": [
             "#908caa"
         ],
+        "TEXT_LINK": [
+            "#00b0f4"
+        ],
+        "TEXT_PRIMARY": [
+            "#e0def4"
+        ],
         "INPUT_PLACEHOLDER_TEXT": [
             "#908caa"
         ],
@@ -47,22 +53,7 @@
         "BACKGROUND_PRIMARY": [
             "#232136"
         ],
-        "CARD_PRIMARY_BG": [
-            "#2a273f"
-        ],
-        "BG_BASE_PRIMARY": [
-            "#2a273f"
-        ],
-        "BG_BACKDROP": [
-            "#000000b2"
-        ],
         "BACKGROUND_SECONDARY": [
-            "#232136"
-        ],
-        "CARD_SECONDARY_BG": [
-            "#2a273f"
-        ],
-        "BG_BASE_SECONDARY": [
             "#232136"
         ],
         "BACKGROUND_SECONDARY_ALT": [
@@ -71,11 +62,11 @@
         "BACKGROUND_TERTIARY": [
             "#393552"
         ],
-        "BG_BASE_TERTIARY": [
-            "#2a273f"
-        ],
         "BACKGROUND_ACCENT": [
             "#393552"
+        ],
+        "BACKGROUND_FLOATING": [
+            "#2a273f"
         ],
         "BACKGROUND_MOBILE_PRIMARY": [
             "#232136"
@@ -104,6 +95,30 @@
         "BACKGROUND_MENTIONED": [
             "#f6c17717"
         ],
+        "CARD_PRIMARY_BG": [
+            "#2a273f"
+        ],
+        "BG_BASE_PRIMARY": [
+            "#2a273f"
+        ],
+        "BG_BASE_SECONDARY": [
+            "#232136"
+        ],
+        "BG_BASE_TERTIARY": [
+            "#2a273f"
+        ],
+        "BG_BACKDROP": [
+            "#000000b2"
+        ],
+        "CARD_SECONDARY_BG": [
+            "#2a273f"
+        ],
+        "MODAL_BACKGROUND": [
+            "#2a273f"
+        ],
+        "SHEET_BACKGROUND": [
+            "#2a273f"
+        ],
         "REDESIGN_ACTIVITY_CARD_BACKGROUND": [
             "#393552"
         ],
@@ -125,23 +140,29 @@
         "REDESIGN_BUTTON_TERTIARY_BACKGROUND": [
             "#393552"
         ],
+        "REDESIGN_BUTTON_PRIMARY_PRESSED_BACKGROUND": [
+            "#9e6bc4"
+        ],
         "CHANNELS_DEFAULT": [
             "#908caa"
         ],
         "CHANNEL_ICON": [
             "#6e6a86"
         ],
-        "TEXT_PRIMARY": [
-            "#e0def4"
-        ],
-        "TEXT_LINK": [
-            "#00b0f4"
-        ],
-        "REDESIGN_BUTTON_PRIMARY_PRESSED_BACKGROUND": [
-            "#4752c4"
-        ],
         "THREAD_CHANNEL_SPINE": [
             "#908caa"
+        ],
+        "SCROLLBAR_THUMB_BACKGROUND": [
+            "#393552"
+        ],
+        "SCROLLBAR_AUTO_THUMB": [
+            "#393552"
+        ],
+        "CONTROL_BRAND_FOREGROUND": [
+            "#c4a7e7"
+        ],
+        "CONTROL_BRAND_FOREGROUND_NEW": [
+            "#c4a7e7"
         ]
     },
     "rawColors": {
@@ -157,7 +178,7 @@
         "PRIMARY_530": "#f09",
         "PRIMARY_600": "#393552",
         "PRIMARY_630": "#393552",
-        "PRIMARY_645": "#5865f250",
+        "PRIMARY_645": "#c4a7e750",
         "PRIMARY_660": "#393552",
         "PRIMARY_700": "#393552",
         "PRIMARY_800": "#232136",
@@ -170,12 +191,12 @@
         "PLUM_19": "#232136",
         "PLUM_20": "#232136",
         "PLUM_3": "#e0def4",
-        "PLUM_4": "#5865f250",
+        "PLUM_4": "#c4a7e750",
         "PLUM_6": "#c4a7e7",
-        "BRAND_260": "#7289da",
-        "BRAND_360": "#5865f2",
-        "BRAND_500": "#5865f2",
-        "BRAND_560": "#4752c4",
+        "BRAND_260": "#d4afef",
+        "BRAND_360": "#c4a7e7",
+        "BRAND_500": "#c4a7e7",
+        "BRAND_560": "#9e6bc4",
         "BLUE_345": "#00b0f4",
         "GREEN_100": "#57f287",
         "GREEN_130": "#57f287",
@@ -256,12 +277,12 @@
         "customOverlays": true,
         "mentionLineColor": "#f6c177",
         "icons": {
-            "ic_radio_circle_checked": "#5865f2",
+            "ic_radio_circle_checked": "#c4a7e7",
             "ic_radio_circle_checked__overlay": "#e0def4",
-            "ic_radio_square_24px": "#5865f2",
-            "ic_radio_square_checked_24px": "#5865f2",
+            "ic_radio_square_24px": "#c4a7e7",
+            "ic_radio_square_checked_24px": "#c4a7e7",
             "ic_radio_square_checked_24px__overlay": "#e0def4",
-            "ic_selection_checked_24px": "#5865f2",
+            "ic_selection_checked_24px": "#c4a7e7",
             "ic_selection_checked_24px__overlay": "#e0def4",
             "StatusMobileOnline": "#57f287",
             "StatusIdle": "#f6c177",
