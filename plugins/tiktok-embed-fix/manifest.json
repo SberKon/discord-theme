@@ -1,10 +1,14 @@
 {
   "name": "TikTok Embed Fix",
-  "description": "Fixes TikTok embeds by replacing links with fixtiktok.com — works on messages from you and others. Visual only, original links stay untouched.",
+  "description": "Fixes TikTok embeds by replacing them with fixtiktok.com. Works on messages from you and others. Visual only.",
   "authors": [
     {
       "name": "SberKon",
       "id": "390918110196269058"
     }
-  ]
+  ],
+  "main": "index.js",
+  "vendetta": {
+    "icon": "ic_link"
+  }
 }
