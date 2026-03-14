@@ -1,0 +1,12 @@
+{
+    "id": "text-color-fix",
+    "name": "Text Color Fix",
+    "description": "Fixes black text color in themes",
+    "authors": [
+        {
+            "name": "SberKon",
+            "id": "390918110196269058"
+        }
+    ],
+    "main": "index.js"
+}
