@@ -1,6 +1,6 @@
 {
     "name": "Velvet Night",
-    "description": "Deep purple nights and soft violet dreams — a theme that feels like velvet against your eyes.",
+    "description": "Midnight purple atmosphere. Calm, dark, and just a little dramatic.",
     "authors": [
         {
             "name": "SberKon",
@@ -110,9 +110,6 @@
         "CARD_SECONDARY_BG": [
             "#393552"
         ],
-        "CARD_BACKGROUND_DEFAULT": [
-            "#2a273f"
-        ],
         "BG_BASE_PRIMARY": [
             "#2a273f"
         ],
@@ -131,15 +128,6 @@
         "SHEET_BACKGROUND": [
             "#2a273f"
         ],
-        "BORDER_MUTED": [
-            "#44415a"
-        ],
-        "BORDER_FAINT": [
-            "#393552"
-        ],
-        "BORDER_STRONG": [
-            "#56526e"
-        ],
         "REDESIGN_ACTIVITY_CARD_BACKGROUND": [
             "#393552"
         ],
@@ -150,7 +138,7 @@
             "#2a283e"
         ],
         "REDESIGN_BUTTON_PRIMARY_BACKGROUND": [
-            "#b090d4"
+            "#c4a7e7"
         ],
         "REDESIGN_CHANNEL_CATEGORY_NAME_TEXT": [
             "#e0def4"
