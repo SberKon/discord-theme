@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@vendetta": ["./node_modules/@vendetta/types"],
+      "@vendetta/*": ["./node_modules/@vendetta/types/*"]
+    }
+  },
+  "include": ["plugins/**/*.ts"]
+}

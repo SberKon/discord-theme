@@ -1,0 +1,10 @@
+{
+  "name": "vendetta-plugins",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.17.0"
+  }
+}
