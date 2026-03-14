@@ -21,12 +21,8 @@ const plugins = readdirSync(pluginsDir);
       outfile: join(outPluginDir, "index.js"),
       bundle: true,
       minify: false,
-      format: "iife",
-      globalName: "plugin",
+      format: "cjs",
       external: ["@vendetta", "@vendetta/*"],
-      footer: {
-        js: "module.exports = plugin;",
-      },
       define: {
         "process.env.NODE_ENV": '"production"',
       },
@@ -37,8 +33,8 @@ const plugins = readdirSync(pluginsDir);
       join(outPluginDir, "manifest.json")
     );
 
-    console.log(`✅ Built: ${plugin}`);
+    console.log(`Built: ${plugin}`);
   }
 
-  console.log("🎉 All plugins built!");
+  console.log("All plugins built!");
 })();
