@@ -1,6 +1,6 @@
 {
-    "name": "TikTok Embed Fix",
-    "description": "Automatically converts TikTok links to fixtiktok.com — visual only, original links untouched.",
+    "name": "Char Counter Theme Patch",
+    "description": "Fixes text color in Char Counter's Floating Pill mode to respect your theme",
     "authors": [
         {
             "name": "SberKon",
@@ -9,6 +9,6 @@
     ],
     "main": "src/index.ts",
     "vendetta": {
-        "icon": "ic_badge_staff"
+        "icon": "ic_theme_customization"
     }
 }
