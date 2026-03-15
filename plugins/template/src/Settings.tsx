@@ -3,6 +3,6 @@ const { FormText } = Forms;
 
 export default () => (
     <FormText>
-        Hello, world!
+        TikTok Embed Fix - Automatically converts TikTok links to fixtiktok.com
     </FormText>
 )
