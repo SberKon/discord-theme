@@ -14,62 +14,65 @@ function getTikTokFixUrl(url) {
     }
 }
 
-let unpatch;
+let unpatches = [];
 
 export default {
     onLoad: () => {
         logger.log("TikTok Embed Fix loaded!");
         
         try {
-            // Get the message component
-            const { getByStoreName } = require("@vendetta/metro");
-            const MessageStore = getByStoreName?.("MessageStore");
+            // Patch React.createElement to intercept all rendered components
+            const React = require("react");
             
-            if (!MessageStore) {
-                throw new Error("MessageStore not found");
-            }
-            
-            // Patch getMessage to transform TikTok links
-            unpatch = patcher.instead(
-                MessageStore,
-                "getMessage",
-                function(args, original) {
-                    const result = original.apply(this, args);
+            unpatches.push(
+                patcher.before(React, "createElement", (args) => {
+                    const [type, props] = args;
                     
-                    if (result?.embeds && Array.isArray(result.embeds)) {
-                        result.embeds = result.embeds.map(embed => {
-                            if (embed?.url) {
-                                const match = embed.url.match(/https?:\/\/(vm|vt|www)\.tiktok\.com\//);
-                                if (match) {
-                                    return {
-                                        ...embed,
-                                        url: getTikTokFixUrl(embed.url),
-                                        original_url: embed.url,
-                                    };
-                                }
+                    // Patch text nodes
+                    if (typeof args[2] === "string") {
+                        args[2] = args[2].replace(TIKTOK_REGEX, getTikTokFixUrl);
+                    }
+                    
+                    // Patch children array
+                    if (Array.isArray(args[2])) {
+                        args[2] = args[2].map(child => {
+                            if (typeof child === "string") {
+                                return child.replace(TIKTOK_REGEX, getTikTokFixUrl);
                             }
-                            return embed;
+                            return child;
                         });
                     }
                     
-                    // Also fix links in content
-                    if (result?.content) {
-                        result.content = result.content.replace(TIKTOK_REGEX, getTikTokFixUrl);
+                    // Patch children in props
+                    if (props?.children && typeof props.children === "string") {
+                        props.children = props.children.replace(TIKTOK_REGEX, getTikTokFixUrl);
                     }
                     
-                    return result;
-                }
+                    if (props?.children && Array.isArray(props.children)) {
+                        props.children = props.children.map(child => {
+                            if (typeof child === "string") {
+                                return child.replace(TIKTOK_REGEX, getTikTokFixUrl);
+                            }
+                            return child;
+                        });
+                    }
+                    
+                    // Patch href and src attributes
+                    if (props?.href && typeof props.href === "string") {
+                        props.href = props.href.replace(TIKTOK_REGEX, getTikTokFixUrl);
+                    }
+                })
             );
             
-            logger.log("TikTok Embed Fix patches applied");
+            logger.log("TikTok Embed Fix applied!");
         } catch (e) {
-            logger.warn("Failed to apply patches:", e.message);
+            logger.warn("Failed to apply patch:", e.message);
         }
     },
     
     onUnload: () => {
         logger.log("TikTok Embed Fix unloaded!");
-        unpatch?.();
+        unpatches.forEach(unpatch => unpatch?.());
     },
     
     settings: Settings,
