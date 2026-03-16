@@ -1,10 +1,12 @@
 {
-  "_info": {
-    "name": "Red Inferno",
-    "version": "1.0.0",
-    "description": "Deep crimson dark theme — rich reds, dark charcoals, subtle ember glows.",
-    "author": "SberKon"
-  },
+    "name": "Velvet Night v1.4",
+    "description": "Midnight purple atmosphere. Calm, dark, and just a little dramatic.",
+    "authors": [
+        {
+            "name": "SberKon",
+            "id": "390918110196269058"
+        }
+    ],
 
   "colors": {
     "brand-experiment-100": "#fff0f0",
