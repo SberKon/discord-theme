@@ -1,5 +1,5 @@
 {
-    "name": "Velvet Night v1.0",
+    "name": "Velvet Night v1.1",
     "description": "Midnight purple atmosphere. Calm, dark, and just a little dramatic.",
     "authors": [
         {
@@ -108,10 +108,10 @@
             "#f6c17745"
         ],
         "MENTION_FOREGROUND": [
-            "#c4a7e7"
+            "#9ab5e8"
         ],
         "MENTION_BACKGROUND": [
-            "#c4a7e730"
+            "#9ab5e830"
         ],
         "CARD_PRIMARY_BG": [
             "#2a273f"
@@ -131,11 +131,26 @@
         "BG_BACKDROP": [
             "#000000b2"
         ],
+        "BG_SURFACE_RAISED": [
+            "#393552"
+        ],
+        "BG_SURFACE_OVERLAY_TMP": [
+            "#2a273f"
+        ],
         "MODAL_BACKGROUND": [
             "#2a273f"
         ],
         "SHEET_BACKGROUND": [
             "#2a273f"
+        ],
+        "PANEL_BG": [
+            "#232136"
+        ],
+        "EMBED_BACKGROUND": [
+            "#2a273f"
+        ],
+        "EMBED_BACKGROUND_ALTERNATE": [
+            "#393552"
         ],
         "REDESIGN_ACTIVITY_CARD_BACKGROUND": [
             "#393552"
@@ -214,10 +229,10 @@
         "BLACK": "#2a273f",
         "PRIMARY_100": "#e0def4",
         "PRIMARY_200": "#e0def4",
-        "PRIMARY_300": "#ea9a97",
+        "PRIMARY_300": "#9ab5e8",
         "PRIMARY_330": "#e0def4",
         "PRIMARY_360": "#908caa",
-        "PRIMARY_400": "#ea9a97",
+        "PRIMARY_400": "#9ab5e8",
         "PRIMARY_460": "#393552",
         "PRIMARY_500": "#c4a7e7",
         "PRIMARY_530": "#56526e",
