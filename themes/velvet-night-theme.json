@@ -1,5 +1,5 @@
 {
-    "name": "Velvet Night v1.3",
+    "name": "Velvet Night v1.4",
     "description": "Midnight purple atmosphere. Calm, dark, and just a little dramatic.",
     "authors": [
         {
@@ -45,7 +45,7 @@
             "#eb6f92"
         ],
         "TEXT_MENTION": [
-            "#d4b8f0"
+            "#e8d5ff"
         ],
         "INPUT_PLACEHOLDER_TEXT": [
             "#908caa"
@@ -61,6 +61,15 @@
         ],
         "INTERACTIVE_MUTED": [
             "#6e6a86"
+        ],
+        "STATUS_POSITIVE_TEXT": [
+            "#5bf183"
+        ],
+        "STATUS_POSITIVE_BACKGROUND": [
+            "#5bf18320"
+        ],
+        "STATUS_ONLINE": [
+            "#5bf183"
         ],
         "BACKGROUND_PRIMARY": [
             "#232136"
@@ -111,10 +120,10 @@
             "#f6c17725"
         ],
         "MENTION_FOREGROUND": [
-            "#d4b8f0"
+            "#e8d5ff"
         ],
         "MENTION_BACKGROUND": [
-            "#d4b8f020"
+            "#e8d5ff20"
         ],
         "CARD_PRIMARY_BG": [
             "#2a273f"
@@ -257,7 +266,7 @@
         "GREEN_345": "#5bf183",
         "GREEN_360": "#5bf183",
         "GREEN_400": "#5bf183",
-        "GREEN_430": "#3ba55d",
+        "GREEN_430": "#5bf183",
         "GREEN_460": "#5bf183",
         "GREEN_500": "#5bf183",
         "GREEN_530": "#5bf183",
