@@ -1,5 +1,5 @@
 {
-    "name": "Velvet Night v1.2",
+    "name": "Velvet Night v1.3",
     "description": "Midnight purple atmosphere. Calm, dark, and just a little dramatic.",
     "authors": [
         {
@@ -45,7 +45,7 @@
             "#eb6f92"
         ],
         "TEXT_MENTION": [
-            "#c4a7e7"
+            "#d4b8f0"
         ],
         "INPUT_PLACEHOLDER_TEXT": [
             "#908caa"
@@ -111,10 +111,10 @@
             "#f6c17725"
         ],
         "MENTION_FOREGROUND": [
-            "#c4a7e7"
+            "#d4b8f0"
         ],
         "MENTION_BACKGROUND": [
-            "#c4a7e720"
+            "#d4b8f020"
         ],
         "CARD_PRIMARY_BG": [
             "#2a273f"
@@ -150,7 +150,7 @@
             "#2a283e"
         ],
         "REDESIGN_BUTTON_PRIMARY_BACKGROUND": [
-            "#9e6bc4"
+            "#c4a7e7"
         ],
         "REDESIGN_CHANNEL_CATEGORY_NAME_TEXT": [
             "#e0def4"
@@ -165,7 +165,7 @@
             "#393552"
         ],
         "REDESIGN_BUTTON_PRIMARY_PRESSED_BACKGROUND": [
-            "#7a4fa0"
+            "#9e6bc4"
         ],
         "CHANNELS_DEFAULT": [
             "#908caa"
@@ -183,10 +183,10 @@
             "#393552"
         ],
         "CONTROL_BRAND_FOREGROUND": [
-            "#9e6bc4"
+            "#c4a7e7"
         ],
         "CONTROL_BRAND_FOREGROUND_NEW": [
-            "#9e6bc4"
+            "#c4a7e7"
         ],
         "DEPRECATED_CARD_BG": [
             "#2a273f"
@@ -242,36 +242,36 @@
         "PLUM_4": "#c4a7e750",
         "PLUM_6": "#c4a7e7",
         "BRAND_260": "#d4b8f0",
-        "BRAND_360": "#9e6bc4",
-        "BRAND_500": "#9e6bc4",
-        "BRAND_560": "#7a4fa0",
+        "BRAND_360": "#c4a7e7",
+        "BRAND_500": "#c4a7e7",
+        "BRAND_560": "#9e6bc4",
         "BLUE_345": "#00b0f4",
-        "GREEN_100": "#57f287",
-        "GREEN_130": "#57f287",
-        "GREEN_160": "#57f287",
-        "GREEN_200": "#57f287",
-        "GREEN_230": "#57f287",
-        "GREEN_260": "#57f287",
-        "GREEN_300": "#57f287",
-        "GREEN_330": "#57f287",
-        "GREEN_345": "#57f287",
-        "GREEN_360": "#3ba55d",
-        "GREEN_400": "#3ba55d",
+        "GREEN_100": "#5bf183",
+        "GREEN_130": "#5bf183",
+        "GREEN_160": "#5bf183",
+        "GREEN_200": "#5bf183",
+        "GREEN_230": "#5bf183",
+        "GREEN_260": "#5bf183",
+        "GREEN_300": "#5bf183",
+        "GREEN_330": "#5bf183",
+        "GREEN_345": "#5bf183",
+        "GREEN_360": "#5bf183",
+        "GREEN_400": "#5bf183",
         "GREEN_430": "#3ba55d",
-        "GREEN_460": "#3ba55d",
-        "GREEN_500": "#3ba55d",
-        "GREEN_530": "#3ba55d",
-        "GREEN_560": "#3ba55d",
-        "GREEN_600": "#3ba55d",
-        "GREEN_630": "#3ba55d",
-        "GREEN_660": "#3ba55d",
-        "GREEN_700": "#3ba55d",
-        "GREEN_730": "#3ba55d",
-        "GREEN_760": "#3ba55d",
-        "GREEN_800": "#3ba55d",
-        "GREEN_830": "#3ba55d",
-        "GREEN_860": "#3ba55d",
-        "GREEN_900": "#3ba55d",
+        "GREEN_460": "#5bf183",
+        "GREEN_500": "#5bf183",
+        "GREEN_530": "#5bf183",
+        "GREEN_560": "#5bf183",
+        "GREEN_600": "#5bf183",
+        "GREEN_630": "#5bf183",
+        "GREEN_660": "#5bf183",
+        "GREEN_700": "#5bf183",
+        "GREEN_730": "#5bf183",
+        "GREEN_760": "#5bf183",
+        "GREEN_800": "#5bf183",
+        "GREEN_830": "#5bf183",
+        "GREEN_860": "#5bf183",
+        "GREEN_900": "#5bf183",
         "GUILD_BOOSTING_PINK": "#eb6f92",
         "GUILD_BOOSTING_PURPLE": "#c4a7e7",
         "GUILD_BOOSTING_PURPLE_FOR_GRADIENTS": "#c4a7e7",
@@ -338,11 +338,11 @@
             "ic_radio_square_checked_24px__overlay": "#e0def4",
             "ic_selection_checked_24px": "#c4a7e7",
             "ic_selection_checked_24px__overlay": "#e0def4",
-            "StatusMobileOnline": "#3ba55d",
+            "StatusMobileOnline": "#5bf183",
             "StatusIdle": "#f6c177",
             "StatusDND": "#eb6f92",
             "StatusOffline": "#6e6a86",
-            "StatusOnline": "#3ba55d",
+            "StatusOnline": "#5bf183",
             "StatusStreaming": "#c4a7e7"
         }
     },
