@@ -1,6 +1,6 @@
 {
     "name": "TikTok Embed Fix",
-    "description": "Automatically converts TikTok links to fixtiktok.com — visual only, original links untouched.",
+    "description": "Transforms TikTok embeds into styled cards with stats, author info, and video — links stay untouched.",
     "authors": [
         {
             "name": "SberKon",

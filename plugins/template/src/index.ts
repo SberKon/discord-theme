@@ -1,7 +1,21 @@
 import { FluxDispatcher } from "@vendetta/metro/common";
 import { before } from "@vendetta/patcher";
+import { storage } from "@vendetta/plugin";
 import Settings from "./Settings";
 
+// ─── Default settings ────────────────────────────────────────────────
+const DEFAULTS = {
+    embedColor: 6513919,        // #635BFF — tnktok purple-blue
+    showFooter: true,
+    sensitiveHandling: "warn",  // "warn" | "hide"
+};
+
+function cfg(key: string): any {
+    const val = (storage as any)[key];
+    return val !== undefined ? val : (DEFAULTS as any)[key];
+}
+
+// ─── Domain detection ────────────────────────────────────────────────
 const TIKTOK_DOMAINS = [
     "tiktok.com",
     "www.tiktok.com",
@@ -10,106 +24,284 @@ const TIKTOK_DOMAINS = [
     "m.tiktok.com",
 ];
 
-/**
- * Check if a URL belongs to TikTok
- */
 function isTikTokUrl(url: string): boolean {
     try {
         const parsed = new URL(url);
         return TIKTOK_DOMAINS.some(
-            (domain) => parsed.hostname.toLowerCase() === domain
+            (d) => parsed.hostname.toLowerCase() === d
         );
     } catch {
         return false;
     }
 }
 
-/**
- * Replace tiktok.com with tiktokez.com in a URL string
- */
-function fixTikTokUrl(url: string): string {
-    return url.replace(/tiktok\.com/gi, "tiktokez.com");
+function isTikTokEmbed(embed: any): boolean {
+    const url = embed.rawUrl || embed.url || "";
+    const provider = embed.provider?.name?.toLowerCase() || "";
+    return isTikTokUrl(url) || provider === "tiktok";
+}
+
+// ─── Content type detection ──────────────────────────────────────────
+
+function isSensitiveEmbed(embed: any): boolean {
+    // Zero-dimension video = sensitive marker
+    if (
+        embed.video &&
+        embed.video.width === 0 &&
+        embed.video.height === 0
+    ) {
+        return true;
+    }
+
+    const title = (embed.title || "").toLowerCase();
+    const sensitiveMarkers = [
+        "зайди в tiktok",
+        "переглянути відео",
+        "check out",
+        "watch this",
+        "sensitive content",
+    ];
+    if (sensitiveMarkers.some((m) => title.includes(m))) return true;
+
+    // Generic TikTok logo thumbnail = blocked content
+    const thumbUrl = embed.thumbnail?.url || "";
+    if (thumbUrl.includes("tiktok-logo")) return true;
+
+    return false;
+}
+
+function isPhotoPost(url: string): boolean {
+    return /\/photo\/\d+/.test(url);
+}
+
+// ─── Metadata extraction ────────────────────────────────────────────
+
+/** "TikTok · TRY-SAN" → "TRY-SAN" */
+function extractDisplayName(title: string | undefined): string | null {
+    if (!title) return null;
+    const m = title.match(/TikTok\s*[·•\-–]\s*(.+)/i);
+    return m ? m[1].trim() : null;
+}
+
+/** URL → "@username" */
+function extractHandle(url: string | undefined): string | null {
+    if (!url) return null;
+    const m = url.match(/@([^/?&#]+)/);
+    return m ? `@${m[1]}` : null;
 }
 
 /**
- * Patch embeds in a message: for any TikTok embed,
- * swap domain to tiktokez.com so Discord fetches a proper embed.
+ * Parse TikTok embed description.
+ * UA format: "Уподобайки: 45K, коментарі: 630. «Hiromi Higuruma»"
+ * EN format: "Likes: 45K, Comments: 630. «caption»"
  */
+function parseDescription(desc: string | undefined): {
+    likes?: string;
+    comments?: string;
+    caption?: string;
+} {
+    if (!desc) return {};
+    const result: any = {};
+
+    // Caption in «…» or "…" or "…"
+    const cm = desc.match(/[«\u201C\u201E](.+?)[»\u201D\u201F]/);
+    if (cm) result.caption = cm[1];
+
+    // Numbers (first ≈ likes, second ≈ comments)
+    const nums = desc.match(/\d[\d.,]*\s*[KkMmкКмМ]?/g);
+    if (nums) {
+        const cleaned = nums
+            .map((n) => n.replace(/\s/g, "").trim())
+            .filter((n) => n.length > 0);
+        if (cleaned.length >= 1) result.likes = cleaned[0];
+        if (cleaned.length >= 2) result.comments = cleaned[1];
+    }
+
+    return result;
+}
+
+// ─── Embed builders ─────────────────────────────────────────────────
+
+/** Build author block */
+function buildAuthor(
+    title: string | undefined,
+    url: string | undefined
+): { name: string; url: string } {
+    const name = extractDisplayName(title);
+    const handle = extractHandle(url);
+
+    const authorName =
+        name && handle
+            ? `${name} (${handle})`
+            : name || handle || "TikTok";
+
+    const authorUrl = handle
+        ? `https://tiktok.com/${handle}`
+        : url || "https://tiktok.com";
+
+    return { name: authorName, url: authorUrl };
+}
+
+/** Build stats description line */
+function buildStatsLine(stats: {
+    likes?: string;
+    comments?: string;
+}): string | undefined {
+    if (!stats.likes && !stats.comments) return undefined;
+    return `**❤️ ${stats.likes || "?"} 💬 ${stats.comments || "?"}**`;
+}
+
+/** Copy thumbnail data from original embed */
+function copyThumbnail(src: any): any | undefined {
+    if (!src) return undefined;
+    return {
+        url: src.url,
+        proxyURL: src.proxyURL || src.proxy_url,
+        width: src.width || 720,
+        height: src.height || 1280,
+    };
+}
+
+/** Copy video data from original embed */
+function copyVideo(src: any): any | undefined {
+    if (!src?.url) return undefined;
+    return {
+        url: src.url,
+        proxyURL: src.proxyURL || src.proxy_url,
+        width: src.width || 720,
+        height: src.height || 1280,
+    };
+}
+
+// ─── Video embed (tnktok style) ─────────────────────────────────────
+function buildVideoEmbed(embed: any): any {
+    const color = cfg("embedColor");
+    const showFooter = cfg("showFooter");
+    const url = embed.rawUrl || embed.url;
+    const author = buildAuthor(embed.title, url);
+    const stats = parseDescription(embed.description);
+    const statsLine = buildStatsLine(stats);
+
+    const result: any = {
+        type: "rich",
+        url,
+        color,
+        author,
+    };
+
+    if (statsLine) result.description = statsLine;
+
+    // Thumbnail (cover image)
+    const thumb = copyThumbnail(embed.thumbnail);
+    if (thumb) result.thumbnail = thumb;
+
+    // Video player
+    const video = copyVideo(embed.video);
+    if (video) result.video = video;
+
+    if (showFooter) result.footer = { text: "TikTok" };
+
+    return result;
+}
+
+// ─── Photo embed (tnktok style + photo count) ───────────────────────
+function buildPhotoEmbed(embed: any): any {
+    const color = cfg("embedColor");
+    const showFooter = cfg("showFooter");
+    const url = embed.rawUrl || embed.url;
+    const author = buildAuthor(embed.title, url);
+    const stats = parseDescription(embed.description);
+
+    const parts: string[] = [];
+    if (stats.caption) parts.push(`**${stats.caption}**`);
+
+    const sl = buildStatsLine(stats);
+    if (sl) parts.push(sl);
+
+    const result: any = {
+        type: "rich",
+        url,
+        color,
+        author,
+    };
+
+    if (parts.length) result.description = parts.join("\n");
+
+    // Use thumbnail as main image
+    if (embed.thumbnail) {
+        result.image = {
+            url: embed.thumbnail.url,
+            proxyURL:
+                embed.thumbnail.proxyURL || embed.thumbnail.proxy_url,
+            width: embed.thumbnail.width,
+            height: embed.thumbnail.height,
+        };
+    }
+
+    if (showFooter) result.footer = { text: "TikTok" };
+
+    return result;
+}
+
+// ─── Sensitive content warning ──────────────────────────────────────
+function buildSensitiveEmbed(embed: any): any {
+    const showFooter = cfg("showFooter");
+    return {
+        type: "rich",
+        url: embed.rawUrl || embed.url,
+        title: "⚠️ Sensitive Content",
+        description:
+            "This video is age-restricted by TikTok.\nVisit TikTok directly to view it.",
+        color: 16237824,
+        ...(showFooter ? { footer: { text: "TikTok" } } : {}),
+    };
+}
+
+// ─── Transform dispatcher ───────────────────────────────────────────
+
+function transformEmbed(embed: any): any | null {
+    if (!isTikTokEmbed(embed)) return embed;
+
+    // Sensitive content
+    if (isSensitiveEmbed(embed)) {
+        return cfg("sensitiveHandling") === "hide"
+            ? null
+            : buildSensitiveEmbed(embed);
+    }
+
+    // Photo vs Video
+    const url = embed.rawUrl || embed.url || "";
+    if (isPhotoPost(url)) return buildPhotoEmbed(embed);
+
+    return buildVideoEmbed(embed);
+}
+
 function patchMessageEmbeds(message: any) {
     if (!message?.embeds?.length) return;
 
-    for (let i = 0; i < message.embeds.length; i++) {
-        const embed = message.embeds[i];
-
-        // Check if this embed is from TikTok by its URL or provider
-        const embedUrl = embed.url || "";
-        const providerName = embed.provider?.name?.toLowerCase() || "";
-        const isTikTok =
-            isTikTokUrl(embedUrl) || providerName.includes("tiktok");
-
-        if (!isTikTok) continue;
-
-        // Clone the embed so we don't mutate cached objects
-        const fixed = { ...embed };
-
-        // Fix the main embed URL
-        if (fixed.url) {
-            fixed.url = fixTikTokUrl(fixed.url);
-        }
-
-        // Fix thumbnail URL
-        if (fixed.thumbnail?.url) {
-            fixed.thumbnail = {
-                ...fixed.thumbnail,
-                url: fixTikTokUrl(fixed.thumbnail.url),
-            };
-            if (fixed.thumbnail.proxyURL) {
-                fixed.thumbnail.proxyURL = fixTikTokUrl(
-                    fixed.thumbnail.proxyURL
-                );
-            }
-        }
-
-        // Fix video URL
-        if (fixed.video?.url) {
-            fixed.video = {
-                ...fixed.video,
-                url: fixTikTokUrl(fixed.video.url),
-            };
-            if (fixed.video.proxyURL) {
-                fixed.video.proxyURL = fixTikTokUrl(fixed.video.proxyURL);
-            }
-        }
-
-        // Fix provider URL
-        if (fixed.provider?.url) {
-            fixed.provider = {
-                ...fixed.provider,
-                url: fixTikTokUrl(fixed.provider.url),
-            };
-        }
-
-        message.embeds[i] = fixed;
+    const patched: any[] = [];
+    for (const embed of message.embeds) {
+        const result = transformEmbed(embed);
+        if (result !== null) patched.push(result);
     }
+    message.embeds = patched;
 }
+
+// ─── Plugin lifecycle ───────────────────────────────────────────────
 
 let patches: (() => void)[] = [];
 
 export default {
     onLoad: () => {
-        // Patch MESSAGE_CREATE — new messages coming in
         patches.push(
             before("dispatch", FluxDispatcher, ([event]) => {
                 if (
                     event.type === "MESSAGE_CREATE" ||
                     event.type === "MESSAGE_UPDATE"
                 ) {
-                    if (event.message) {
-                        patchMessageEmbeds(event.message);
-                    }
+                    if (event.message) patchMessageEmbeds(event.message);
                 }
 
-                // Also patch bulk message loads (opening a channel / scrolling)
                 if (event.type === "LOAD_MESSAGES_SUCCESS") {
                     if (Array.isArray(event.messages)) {
                         for (const msg of event.messages) {
@@ -121,9 +313,7 @@ export default {
         );
     },
     onUnload: () => {
-        for (const unpatch of patches) {
-            unpatch();
-        }
+        for (const unpatch of patches) unpatch();
         patches = [];
     },
     settings: Settings,
