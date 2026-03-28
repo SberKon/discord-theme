@@ -59,12 +59,7 @@ function isPhotoUrl(url: string): boolean {
     return /\/photo\/\d+/.test(url);
 }
 
-function extractVideoId(url: string): string | null {
-    const m = url.match(/(?:video|photo)\/(\d+)/);
-    return m ? m[1] : null;
-}
-
-// ─── Parsers (from original embed data) ──────────────────────────────
+// ─── Parsers (from original TikTok embed data) ──────────────────────
 function parseName(title?: string): string | null {
     if (!title) return null;
     const m = title.match(/TikTok\s*[·•\-–]\s*(.+)/i);
@@ -125,20 +120,7 @@ function replaceTags(template: string, data: any): string {
         .replace(/\{username\}/g, author.username ? `@${author.username}` : "@unknown");
 }
 
-// ─── Copy media preserving Discord proxy URLs ────────────────────────
-function cpMedia(obj: any): any | undefined {
-    if (!obj?.url) return undefined;
-    return {
-        url: obj.url,
-        proxy_url: obj.proxy_url || obj.proxyURL,
-        proxyURL: obj.proxyURL || obj.proxy_url,
-        width: obj.width || 720,
-        height: obj.height || 1280,
-        content_type: obj.content_type,
-    };
-}
-
-// ─── Anti-loop: track processed messages ─────────────────────────────
+// ─── Anti-loop guards ────────────────────────────────────────────────
 let isOurDispatch = false;
 const apiDone = new Set<string>();
 
@@ -150,253 +132,115 @@ function cleanupSet() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// SYNCHRONOUS PASS — restructure embed using original proxy URLs
+// SYNC PASS — mutate the original embed IN-PLACE
+// This preserves ALL Discord internal properties (proxy_url, rawTitle, etc.)
+// We only override TEXT fields — media stays untouched!
 // ═══════════════════════════════════════════════════════════════════════
 
-function buildVideoSync(e: any): any {
+function mutateVideoEmbed(e: any): void {
     const url = e.rawUrl || e.url || "";
     const name = parseName(e.title);
     const handle = parseHandle(url);
     const stats = parseBasicStats(e.description);
     const statsLine = `❤️ ${stats.likes || "?"} 💬 ${stats.comments || "?"}`;
-
-    const result: any = {
-        type: "rich",
-        url: url,
-        color: cfg("embedColor"),
-        description: statsLine,
-    };
-
     const authorName = name || handle || "TikTok";
-    result.author = {
+
+    // Override ONLY text fields — keep type, thumbnail, video, image, provider, etc.
+    e.color = cfg("embedColor");
+    e.author = {
         name: name && handle ? `${name} (${handle})` : authorName,
         url: handle ? `https://tiktok.com/${handle}` : url,
     };
+    e.description = statsLine;
+    if ("rawDescription" in e) e.rawDescription = statsLine;
+    e.footer = { text: cfg("pluginName") };
 
-    // Preserve original media with Discord proxy URLs
-    const thumb = cpMedia(e.thumbnail);
-    if (thumb) result.thumbnail = thumb;
-
-    const video = cpMedia(e.video);
-    if (video) {
-        video.width = video.width || 720;
-        video.height = video.height || 1280;
-        result.video = video;
-    }
-
-    result.footer = { text: cfg("pluginName") };
-    return result;
+    // Remove title (TikTok's "TikTok - Username" is redundant, we have author)
+    e.title = undefined;
+    if ("rawTitle" in e) e.rawTitle = undefined;
 }
 
-function buildPhotoSync(e: any): any {
+function mutatePhotoEmbed(e: any): void {
     const url = e.rawUrl || e.url || "";
     const name = parseName(e.title);
     const handle = parseHandle(url);
     const stats = parseBasicStats(e.description);
     const statsLine = `❤️ ${stats.likes || "?"} 💬 ${stats.comments || "?"}`;
-
-    const result: any = {
-        type: "rich",
-        url: url,
-        color: cfg("embedColor"),
-        description: statsLine,
-    };
-
     const authorName = name || handle || "TikTok";
-    result.author = {
+
+    e.color = cfg("embedColor");
+    e.author = {
         name: name && handle ? `${name} (${handle})` : authorName,
         url: handle ? `https://tiktok.com/${handle}` : url,
     };
+    e.description = statsLine;
+    if ("rawDescription" in e) e.rawDescription = statsLine;
+    e.footer = { text: `${cfg("pluginName")} • 📷 Photo` };
 
-    // Photo as full image (use thumbnail's proxy URL)
-    if (e.thumbnail) {
-        result.image = cpMedia(e.thumbnail);
+    e.title = undefined;
+    if ("rawTitle" in e) e.rawTitle = undefined;
+
+    // Try to make thumbnail full-width: copy to image if no image exists
+    if (e.thumbnail && !e.image) {
+        e.image = { ...e.thumbnail };
     }
-
-    result.footer = { text: `${cfg("pluginName")} • 📷 Photo` };
-    return result;
 }
 
-function buildSensitiveSync(e: any): any {
-    const url = e.rawUrl || e.url || "";
-    const videoId = extractVideoId(url);
-
-    // Bypass: force video playback with real dimensions
+function mutateSensitiveEmbed(e: any): void {
     if (cfg("sensitiveBypass")) {
+        // Bypass: fix 0×0 video dimensions to force playback
+        const url = e.rawUrl || e.url || "";
         const handle = parseHandle(url);
-        const result: any = {
-            type: "rich",
-            url: url,
-            color: cfg("embedColor"),
-            description: "**⚠️ Sensitive Content** (bypass)",
+
+        e.color = cfg("embedColor");
+        e.author = {
+            name: handle || "TikTok",
+            url: handle ? `https://tiktok.com/${handle}` : url,
         };
+        e.description = "**⚠️ Sensitive Content** (bypass)";
+        if ("rawDescription" in e) e.rawDescription = e.description;
+        e.footer = { text: `${cfg("pluginName")} • 18+` };
 
-        if (handle) {
-            result.author = { name: handle, url: `https://tiktok.com/${handle}` };
+        e.title = undefined;
+        if ("rawTitle" in e) e.rawTitle = undefined;
+
+        // Force video to real dimensions (TikTok sends 0×0 for sensitive)
+        if (e.video) {
+            e.video.width = 720;
+            e.video.height = 1280;
         }
 
-        // Force video with real dimensions (TikTok sends 0×0 for sensitive)
-        const video = cpMedia(e.video);
-        if (video && video.url) {
-            video.width = 720;
-            video.height = 1280;
-            result.video = video;
+        // Remove logo thumbnail
+        if (e.thumbnail && (e.thumbnail.url || "").includes("tiktok-logo")) {
+            e.thumbnail = undefined;
         }
-
-        const thumb = cpMedia(e.thumbnail);
-        if (thumb && !(thumb.url || "").includes("tiktok-logo")) {
-            result.thumbnail = thumb;
-        }
-
-        result.footer = { text: `${cfg("pluginName")} • 18+` };
-        return result;
+    } else {
+        // Warning card — replace everything
+        e.type = "rich";
+        e.title = cfg("sensitiveTitle");
+        if ("rawTitle" in e) e.rawTitle = e.title;
+        e.description = cfg("sensitiveDesc");
+        if ("rawDescription" in e) e.rawDescription = e.description;
+        e.color = 16237824; // orange
+        e.footer = { text: `${cfg("pluginName")} • 18+` };
+        e.author = undefined;
+        e.thumbnail = undefined;
+        e.video = undefined;
+        e.image = undefined;
     }
-
-    // Standard warning
-    return {
-        type: "rich",
-        url: url,
-        title: cfg("sensitiveTitle"),
-        description: cfg("sensitiveDesc"),
-        color: 16237824,
-        footer: { text: `${cfg("pluginName")} • 18+` },
-    };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// ASYNC API PASS — enhance with real data, still keep original media
+// ASYNC API PASS — enhance with real data from API
+// Deep-clones the original (preserving all internal fields), then
+// overrides text with API data and dispatches MESSAGE_UPDATE once.
 // ═══════════════════════════════════════════════════════════════════════
 
-function buildVideoAPI(data: any, orig?: any): any {
-    const author = data.author || {};
-    const username = author.username || "unknown";
-    const nickname = author.nickname || "Unknown";
-    const pfp = author.avatar || null;
-    const ts = fmtDate(data.publish);
-    const desc = replaceTags(cfg("videoDescLine"), data);
-
-    const result: any = {
-        type: "rich",
-        url: data.resolved_url || data.input_url || "",
-        color: cfg("embedColor"),
-        author: {
-            name: `${nickname} (@${username})`,
-            url: `https://tiktok.com/@${username}`,
-        },
-        description: desc,
-        footer: { text: `${cfg("pluginName")} • ${ts}` },
-    };
-
-    if (pfp) result.author.icon_url = pfp;
-
-    // Keep original embed's media (has Discord proxy URLs!)
-    if (orig) {
-        const thumb = cpMedia(orig.thumbnail);
-        if (thumb) result.thumbnail = thumb;
-
-        const video = cpMedia(orig.video);
-        if (video) {
-            video.width = video.width || 720;
-            video.height = video.height || 1280;
-            result.video = video;
-        }
-    }
-
-    return result;
-}
-
-function buildPhotoAPI(data: any, orig?: any): any {
-    const author = data.author || {};
-    const username = author.username || "unknown";
-    const nickname = author.nickname || "Unknown";
-    const pfp = author.avatar || null;
-    const ts = fmtDate(data.publish);
-    const desc = replaceTags(cfg("photoDescLine"), data);
-
-    const totalPhotos = data.media?.photoCount || 0;
-    const range = totalPhotos <= 4 ? `1 - ${totalPhotos}` : `1 - 4 of ${totalPhotos}`;
-    const footerText = `${cfg("pluginName")} • ${range} • ${ts}`;
-
-    const result: any = {
-        type: "rich",
-        url: data.resolved_url || data.input_url || "",
-        color: cfg("embedColor"),
-        author: {
-            name: `${nickname} (@${username})`,
-            url: `https://tiktok.com/@${username}`,
-        },
-        description: desc,
-        footer: { text: footerText },
-    };
-
-    if (pfp) result.author.icon_url = pfp;
-
-    // Use original embed's thumbnail as image (has proxy URL)
-    if (orig?.thumbnail) {
-        result.image = cpMedia(orig.thumbnail);
-    }
-
-    return result;
-}
-
-function buildSensitiveAPI(data: any, orig?: any): any {
-    const videoId = data.id || extractVideoId(data.resolved_url || data.input_url || "");
-
-    if (cfg("sensitiveBypass") && videoId) {
-        const author = data.author || {};
-        const username = author.username || "unknown";
-        const playerUrl = `https://www.tiktok.com/player/v1/${videoId}`;
-
-        const result: any = {
-            type: "rich",
-            url: data.resolved_url || data.input_url || "",
-            color: cfg("embedColor"),
-            description: "**⚠️ Sensitive Content** (bypass)",
-            footer: { text: `${cfg("pluginName")} • 18+` },
-        };
-
-        if (username !== "unknown") {
-            result.author = {
-                name: `@${username}`,
-                url: `https://tiktok.com/@${username}`,
-            };
-            if (data.author?.avatar) result.author.icon_url = data.author.avatar;
-        }
-
-        // Keep original video with proxy URL, force real dimensions
-        if (orig) {
-            const video = cpMedia(orig.video);
-            if (video && video.url) {
-                video.width = 720;
-                video.height = 1280;
-                result.video = video;
-            }
-            const thumb = cpMedia(orig.thumbnail);
-            if (thumb && !(thumb.url || "").includes("tiktok-logo")) {
-                result.thumbnail = thumb;
-            }
-        }
-
-        return result;
-    }
-
-    // Standard warning
-    return {
-        type: "rich",
-        url: data?.resolved_url || data?.input_url || "",
-        title: cfg("sensitiveTitle"),
-        description: cfg("sensitiveDesc"),
-        color: 16237824,
-        footer: { text: `${cfg("pluginName")} • 18+` },
-    };
-}
-
-// ─── API fetch (runs ONCE per message) ───────────────────────────────
-async function fetchAndRewrite(
+async function fetchAndEnhance(
     url: string,
     channelId: string,
     messageId: string,
-    origEmbed: any,
+    originalEmbed: any, // the pre-mutation original (deep cloned)
 ): Promise<void> {
     const key = `${channelId}:${messageId}`;
     if (apiDone.has(key)) return;
@@ -407,22 +251,90 @@ async function fetchAndRewrite(
         const apiUrl = `https://tiktok-api-discord.vercel.app/api/tiktok?url=${encodeURIComponent(url)}`;
         const res = await fetch(apiUrl);
         const data = await res.json();
-
         if (!data || !data.ok) return;
 
-        let newEmbed: any;
+        // Start with deep clone of original (has all Discord internal data)
+        const e = originalEmbed;
+
+        const author = data.author || {};
+        const username = author.username || "unknown";
+        const nickname = author.nickname || "Unknown";
+        const pfp = author.avatar || null;
+        const ts = fmtDate(data.publish);
+        const plugin = cfg("pluginName");
+
         if (data.type === "sensitive" || data.sensitive) {
             if (!cfg("enableSensitive")) return;
-            newEmbed = buildSensitiveAPI(data, origEmbed);
+
+            if (cfg("sensitiveBypass")) {
+                e.color = cfg("embedColor");
+                e.author = {
+                    name: username !== "unknown" ? `@${username}` : "TikTok",
+                    url: `https://tiktok.com/@${username}`,
+                };
+                if (pfp) e.author.icon_url = pfp;
+                e.description = "**⚠️ Sensitive Content** (bypass)";
+                if ("rawDescription" in e) e.rawDescription = e.description;
+                e.footer = { text: `${plugin} • 18+` };
+                e.title = undefined;
+                if ("rawTitle" in e) e.rawTitle = undefined;
+                if (e.video) { e.video.width = 720; e.video.height = 1280; }
+                if (e.thumbnail && (e.thumbnail.url || "").includes("tiktok-logo")) {
+                    e.thumbnail = undefined;
+                }
+            } else {
+                e.type = "rich";
+                e.title = cfg("sensitiveTitle");
+                if ("rawTitle" in e) e.rawTitle = e.title;
+                e.description = cfg("sensitiveDesc");
+                if ("rawDescription" in e) e.rawDescription = e.description;
+                e.color = 16237824;
+                e.footer = { text: `${plugin} • 18+` };
+                e.author = undefined;
+                e.thumbnail = undefined;
+                e.video = undefined;
+                e.image = undefined;
+            }
         } else if (data.type === "photo") {
             if (!cfg("enablePhoto")) return;
-            newEmbed = buildPhotoAPI(data, origEmbed);
+
+            const totalPhotos = data.media?.photoCount || 0;
+            const range = totalPhotos <= 4 ? `1 - ${totalPhotos}` : `1 - 4 of ${totalPhotos}`;
+
+            e.color = cfg("embedColor");
+            e.author = {
+                name: `${nickname} (@${username})`,
+                url: `https://tiktok.com/@${username}`,
+            };
+            if (pfp) e.author.icon_url = pfp;
+            e.description = replaceTags(cfg("photoDescLine"), data);
+            if ("rawDescription" in e) e.rawDescription = e.description;
+            e.footer = { text: `${plugin} • ${range} • ${ts}` };
+            e.title = undefined;
+            if ("rawTitle" in e) e.rawTitle = undefined;
+
+            // Move thumbnail to image for full-width
+            if (e.thumbnail && !e.image) {
+                e.image = { ...e.thumbnail };
+            }
         } else {
+            // Video
             if (!cfg("enableVideo")) return;
-            newEmbed = buildVideoAPI(data, origEmbed);
+
+            e.color = cfg("embedColor");
+            e.author = {
+                name: `${nickname} (@${username})`,
+                url: `https://tiktok.com/@${username}`,
+            };
+            if (pfp) e.author.icon_url = pfp;
+            e.description = replaceTags(cfg("videoDescLine"), data);
+            if ("rawDescription" in e) e.rawDescription = e.description;
+            e.footer = { text: `${plugin} • ${ts}` };
+            e.title = undefined;
+            if ("rawTitle" in e) e.rawTitle = undefined;
         }
 
-        // Dispatch with guard — isOurDispatch prevents re-entry
+        // Dispatch with guard
         isOurDispatch = true;
         try {
             FluxDispatcher.dispatch({
@@ -430,7 +342,7 @@ async function fetchAndRewrite(
                 message: {
                     id: messageId,
                     channel_id: channelId,
-                    embeds: [newEmbed],
+                    embeds: [e],
                 },
             });
         } finally {
@@ -441,52 +353,50 @@ async function fetchAndRewrite(
     }
 }
 
-// ─── Patch messages (synchronous) ────────────────────────────────────
+// ─── Patch messages ──────────────────────────────────────────────────
 function patchMessage(msg: any) {
     try {
         if (!msg || !msg.embeds || !msg.embeds.length) return;
         if (!msg.id || !msg.channel_id) return;
 
-        const newEmbeds: any[] = [];
-
         for (let i = 0; i < msg.embeds.length; i++) {
             const e = msg.embeds[i];
-            if (!isTikTokEmbed(e)) {
-                newEmbeds.push(e);
-                continue;
-            }
+            if (!isTikTokEmbed(e)) continue;
 
             const url = e.rawUrl || e.url || "";
-            if (!url) { newEmbeds.push(e); continue; }
+            if (!url) continue;
 
-            // Classify
             const sensitive = isSensitive(e);
             const photo = isPhotoUrl(url);
 
             // Check if type is enabled
-            if (sensitive && !cfg("enableSensitive")) { newEmbeds.push(e); continue; }
-            if (photo && !cfg("enablePhoto")) { newEmbeds.push(e); continue; }
-            if (!sensitive && !photo && !cfg("enableVideo")) { newEmbeds.push(e); continue; }
+            if (sensitive && !cfg("enableSensitive")) continue;
+            if (photo && !cfg("enablePhoto")) continue;
+            if (!sensitive && !photo && !cfg("enableVideo")) continue;
 
-            // Synchronous quick rewrite (uses original proxy URLs)
-            let quick: any;
-            if (sensitive) {
-                quick = buildSensitiveSync(e);
-            } else if (photo) {
-                quick = buildPhotoSync(e);
-            } else {
-                quick = buildVideoSync(e);
+            // Deep clone BEFORE mutation (for async API pass)
+            let originalClone: any;
+            try {
+                originalClone = JSON.parse(JSON.stringify(e));
+            } catch {
+                originalClone = { ...e };
             }
-            newEmbeds.push(quick);
 
-            // Fire ONE async API call to enhance with real data
+            // MUTATE IN-PLACE — preserves ALL Discord internal rendering data
+            if (sensitive) {
+                mutateSensitiveEmbed(e);
+            } else if (photo) {
+                mutatePhotoEmbed(e);
+            } else {
+                mutateVideoEmbed(e);
+            }
+
+            // Fire ONE async API call to get accurate data
             const key = `${msg.channel_id}:${msg.id}`;
             if (!apiDone.has(key)) {
-                fetchAndRewrite(url, msg.channel_id, msg.id, e);
+                fetchAndEnhance(url, msg.channel_id, msg.id, originalClone);
             }
         }
-
-        msg.embeds = newEmbeds;
     } catch {
         // Safety net
     }
@@ -499,8 +409,7 @@ export default {
     onLoad: () => {
         patches.push(
             before("dispatch", FluxDispatcher, ([ev]) => {
-                // Skip our own dispatches to prevent infinite loop
-                if (isOurDispatch) return;
+                if (isOurDispatch) return; // Skip our own dispatches
 
                 try {
                     if (ev.type === "MESSAGE_CREATE" || ev.type === "MESSAGE_UPDATE") {

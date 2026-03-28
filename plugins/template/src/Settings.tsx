@@ -330,6 +330,14 @@ export default () => {
     const colorHex = `#${color.toString(16).padStart(6, "0").toUpperCase()}`;
     const colorPreset = COLOR_PRESETS.find(p => p.value === color);
 
+    // Local state for hex input — allows free typing of partial values
+    const [hexInput, setHexInput] = React.useState(colorHex);
+
+    // Sync local input when color changes from presets
+    React.useEffect(() => {
+        setHexInput(colorHex);
+    }, [color]);
+
     return (
         <ScrollView>
             {/* ── General Settings ── */}
@@ -353,49 +361,44 @@ export default () => {
                     {COLOR_PRESETS.map(p => (
                         <TouchableOpacity
                             key={p.value}
-                            onPress={() => { (storage as any).embedColor = p.value; forceUpdate(); }}
+                            onPress={() => {
+                                (storage as any).embedColor = p.value;
+                                setHexInput(p.hex);
+                                forceUpdate();
+                            }}
                             style={[
                                 s.colorDot,
                                 { backgroundColor: p.hex, borderColor: p.value === color ? "#fff" : "transparent" },
                             ]}
                         />
                     ))}
-                    {/* Rainbow button → jump to hex input */}
-                    <TouchableOpacity
-                        onPress={() => {
-                            // Visual feedback — user can edit hex below
-                        }}
-                        style={[
-                            s.colorDot,
-                            {
-                                borderColor: !colorPreset ? "#fff" : "transparent",
-                                overflow: "hidden" as const,
-                            },
-                        ]}
-                    >
-                        <View style={{
-                            width: 32, height: 32, borderRadius: 16,
-                            background: undefined, // RN doesn't support CSS gradients in style
-                        }}>
-                            <Text style={{ fontSize: 18, textAlign: "center", lineHeight: 28 }}>🎨</Text>
-                        </View>
-                    </TouchableOpacity>
+                    {/* Custom indicator */}
+                    <View style={[
+                        s.colorDot,
+                        {
+                            borderColor: !colorPreset ? "#fff" : "transparent",
+                            alignItems: "center", justifyContent: "center",
+                        },
+                    ]}>
+                        <Text style={{ fontSize: 18 }}>🎨</Text>
+                    </View>
                 </View>
 
-                {/* Custom HEX input */}
+                {/* Custom HEX input — local state allows free typing */}
                 <View style={{ paddingHorizontal: 16, paddingBottom: 10 }}>
                     <Text style={[s.label, { marginTop: 2 }]}>Custom HEX Color</Text>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                        {/* Color swatch preview */}
+                        {/* Live color swatch preview */}
                         <View style={{
                             width: 40, height: 40, borderRadius: 8,
-                            backgroundColor: colorHex,
+                            backgroundColor: /^#[0-9a-fA-F]{6}$/.test(hexInput) ? hexInput : colorHex,
                             borderWidth: 2, borderColor: "#2a2a40",
                         }} />
                         <TextInput
                             style={[s.input, { flex: 1, marginVertical: 0 }]}
-                            value={colorHex}
+                            value={hexInput}
                             onChangeText={(v: string) => {
+                                setHexInput(v);
                                 const hex = v.startsWith("#") ? v : `#${v}`;
                                 if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
                                     (storage as any).embedColor = parseInt(hex.slice(1), 16);
