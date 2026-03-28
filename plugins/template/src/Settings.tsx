@@ -454,6 +454,24 @@ export default () => {
                         />
                     ))}
                 </View>
+                <View style={{ paddingHorizontal: 16, paddingBottom: 10 }}>
+                    <Text style={[s.label, { marginTop: 2 }]}>Custom HEX</Text>
+                    <TextInput
+                        style={s.input}
+                        value={colorHex}
+                        onChangeText={(v: string) => {
+                            const hex = v.startsWith("#") ? v : `#${v}`;
+                            if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+                                (storage as any).embedColor = parseInt(hex.slice(1), 16);
+                                forceUpdate();
+                            }
+                        }}
+                        placeholder="#638DFF"
+                        placeholderTextColor="#6b6b8a"
+                        maxLength={7}
+                        autoCapitalize="characters"
+                    />
+                </View>
                 <FormDivider />
 
                 {/* Max Description Length */}

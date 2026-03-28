@@ -99,6 +99,7 @@ const pendingRewrites = new Map<string, { url: string; embedIdx: number }>();
 let fetchCounter = 0;
 
 // ─── Build rich embeds from API data ─────────────────────────────────
+// Returns a single embed
 function buildVideoEmbed(data: any): any {
     const author = data.author || {};
     const username = author.username || "unknown";
@@ -126,21 +127,16 @@ function buildVideoEmbed(data: any): any {
 
     if (pfp) embed.author.icon_url = pfp;
 
-    // Video as image (Discord will render the video URL)
+    // Full-size image (video poster / cover / video URL)
     if (videoUrl) {
         embed.image = { url: videoUrl };
-    }
-
-    // Thumbnail for fallback
-    const cover = data.media?.cover || data.media?.originCover || null;
-    if (cover) {
-        embed.thumbnail = { url: cover, width: 720, height: 1280 };
     }
 
     return embed;
 }
 
-function buildPhotoEmbed(data: any): any {
+// Returns ARRAY of embeds — Discord groups embeds with same url into 2x2 image grid
+function buildPhotoEmbeds(data: any): any[] {
     const author = data.author || {};
     const username = author.username || "unknown";
     const nickname = author.nickname || "Unknown";
@@ -153,33 +149,61 @@ function buildPhotoEmbed(data: any): any {
     const description = replaceTags(descLine, data);
     const photos: string[] = (data.media?.photos || []).slice(0, 4);
     const totalPhotos = data.media?.photoCount || photos.length;
+    const shownCount = photos.length;
 
-    // Footer: "plugin • 1-4 of N • timestamp" or "plugin • 1-N • timestamp" if <=4
+    // Footer: "plugin • 1 - N • timestamp" if <=4, else "plugin • 1 - 4 of N • timestamp"
     const range = totalPhotos <= 4
         ? `1 - ${totalPhotos}`
-        : `1 - 4 of ${totalPhotos}`;
+        : `1 - ${shownCount} of ${totalPhotos}`;
     const footerText = `${plugin} • ${range} • ${ts}`;
 
-    const embed: any = {
-        type: "rich",
-        url: data.resolved_url || data.input_url || "",
-        color: color,
-        author: {
-            name: `${nickname} (@${username})`,
-            url: `https://tiktok.com/@${username}`,
-        },
-        description: description,
-        footer: { text: footerText },
-    };
+    // Shared URL — Discord groups embeds with same url into a grid
+    const sharedUrl = data.resolved_url || data.input_url || "";
 
-    if (pfp) embed.author.icon_url = pfp;
+    const embeds: any[] = [];
 
-    // First photo as main image
-    if (photos.length > 0) {
-        embed.image = { url: photos[0] };
+    for (let i = 0; i < photos.length; i++) {
+        const embed: any = {
+            type: "rich",
+            url: sharedUrl,
+            color: color,
+            image: { url: photos[i] },
+        };
+
+        // Only first embed gets author, description, footer
+        if (i === 0) {
+            embed.author = {
+                name: `${nickname} (@${username})`,
+                url: `https://tiktok.com/@${username}`,
+            };
+            if (pfp) embed.author.icon_url = pfp;
+            embed.description = description;
+        }
+
+        // Only last embed gets footer
+        if (i === photos.length - 1) {
+            embed.footer = { text: footerText };
+        }
+
+        embeds.push(embed);
     }
 
-    return embed;
+    // Fallback: if no photos at all
+    if (embeds.length === 0) {
+        embeds.push({
+            type: "rich",
+            url: sharedUrl,
+            color: color,
+            author: {
+                name: `${nickname} (@${username})`,
+                url: `https://tiktok.com/@${username}`,
+            },
+            description: description,
+            footer: { text: footerText },
+        });
+    }
+
+    return embeds;
 }
 
 function buildSensitiveEmbed(data: any): any {
@@ -207,22 +231,23 @@ async function fetchAndRewrite(
 
         if (!data || !data.ok) return; // API failed, keep original
 
-        let newEmbed: any;
+        let newEmbeds: any[];
         if (data.type === "sensitive" || data.sensitive) {
-            newEmbed = buildSensitiveEmbed(data);
+            newEmbeds = [buildSensitiveEmbed(data)];
         } else if (data.type === "photo") {
-            newEmbed = buildPhotoEmbed(data);
+            // Returns array of embeds (multi-image grid)
+            newEmbeds = buildPhotoEmbeds(data);
         } else {
-            newEmbed = buildVideoEmbed(data);
+            newEmbeds = [buildVideoEmbed(data)];
         }
 
-        // Dispatch a MESSAGE_UPDATE to refresh the embed in the UI
+        // Dispatch a MESSAGE_UPDATE to refresh embeds in the UI
         FluxDispatcher.dispatch({
             type: "MESSAGE_UPDATE",
             message: {
                 id: messageId,
                 channel_id: channelId,
-                embeds: [newEmbed],
+                embeds: newEmbeds,
             },
         });
     } catch {
